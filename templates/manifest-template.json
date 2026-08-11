@@ -1,0 +1,28 @@
+{
+  "runId": "<feature>-YYYYMMDD-01",
+  "baseCommit": "<sha>",
+  "baseBranch": "chore/<baseline>",
+  "opencodeBin": "<resolved binary path>",
+  "opencodeVersion": "<version>",
+  "integrationBranch": "integration/<feature>",
+  "maxParallel": 2,
+  "workers": [
+    {
+      "name": "<name>",
+      "branch": "agent/<name>",
+      "worktree": "<absolute path>",
+      "allowedFiles": [
+        "..."
+      ],
+      "forbiddenFiles": [
+        "..."
+      ],
+      "status": "running|done|blocked|failed",
+      "pid": null,
+      "exitCode": null,
+      "output": ".opencode/parallel-runs/<run-id>/<name>.jsonl",
+      "commits": []
+    }
+  ],
+  "model": "<pinned worker model, e.g. provider/model-id>"
+}
