@@ -1,0 +1,28 @@
+# Secrets / credentials
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.mobileprovision
+
+# Runtime data (never publish)
+.opencode/parallel-runs/
+.opencode/goals/
+.clawteam/
+ct-data/
+worktrees/
+.worktrees/
+logs/
+tmp/
+artifacts/
+runtime-state/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
