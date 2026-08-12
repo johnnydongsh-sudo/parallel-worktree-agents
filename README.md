@@ -63,7 +63,17 @@ git clone <repository-url>
 
 Then link or copy the `parallel-worktree-agents` directory into your OpenCode skill directory (project `.opencode/skills/` or global `~/.config/opencode/skills/`).
 
-> Verify your OpenCode version's skill directory before installation — paths vary across versions.
+Install the required OpenCode agent definitions (`agents/`) into your OpenCode agents directory (project `.opencode/agents/` or global `~/.config/opencode/agents/`). The skill's runtime flow spawns workers via `opencode run --agent worktree-implementer` and reviewers via `--agent worktree-reviewer`; without these agent definitions the skill is not self-contained.
+
+Finally, run compatibility checks:
+
+```text
+1. Install/symlink the skill.
+2. Install/symlink the required OpenCode agent definitions.
+3. Run compatibility checks (skill discovery, agent discovery, `opencode run --dir <worktree>` smoke).
+```
+
+> Verify your OpenCode version's skill and agent directories before installation — paths vary across versions.
 
 ## Usage
 

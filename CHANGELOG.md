@@ -11,3 +11,8 @@
 - Template layer: contract / ownership / implementer prompt / spec & quality reviewer prompts / manifest
 
 Validated through real-world software engineering workflows, including parallel workers, imported implementations, stale-base revalidation, runtime fallback, state mismatch, and CLI compatibility failure paths.
+
+### v1.0.0-rc1 (agents packaging)
+
+- Added `agents/`: `worktree-implementer` (parallel worker with permission deny-list) and `worktree-reviewer` (read-only two-stage reviewer)
+- Skill is self-contained: runtime flow spawns workers/reviewers via `--agent <name>` from this repository
