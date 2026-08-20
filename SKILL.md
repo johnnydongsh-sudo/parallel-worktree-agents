@@ -1,101 +1,110 @@
 ---
 name: parallel-worktree-agents
-description: 多 Worker 并行开发的编排 Skill v1。Policy 层(契约冻结/所有权/BLOCKED/独立验证/两阶段审查/人工合并门)与 Runtime 层(NATIVE/CLAWTEAM)正交。用于需要 2+ 独立任务域并行、或须经完整软件工程 Gate 的实现工作。含 IMPORTED_EXISTING_IMPLEMENTATION 审计模式。Runtime 可插拔,默认停在 READY_FOR_HUMAN_MERGE。
+description: "Coordinate 2+ independent research, review, or implementation tasks with multiple subagents. Use host-native delegation by default, isolate every write-capable worker, and verify results centrally. Do not use for a single small task or tightly coupled work."
+metadata:
+  version: "1.1.0"
+  repository: "https://github.com/johnnydongsh-sudo/parallel-worktree-agents"
 ---
 
-# parallel-worktree-agents v1
+# Parallel Worktree Agents
 
-## 不可破坏的 Invariants
+把一个目标拆成多个互不阻塞的工作域，交给多个子 Agent 并行完成，由当前 Agent 统一协调、验收和整合。
 
-```text
-INVARIANT 1  Main working tree belongs to Coordinator.
-INVARIANT 2  Worker self-report is advisory only.
-INVARIANT 3  Worker commits never flow directly to main.
-INVARIANT 4  Unknown changes are never destroyed before ownership and preservation are proven.
-INVARIANT 5  Runtime reports state; Policy decides acceptance.
-INVARIANT 6  Parallelism is an optimization, not a goal.
-INVARIANT 7  Default terminal state is READY_FOR_HUMAN_MERGE.
-```
+## 先做三个判断
 
-## 触发
+1. **宿主能力**：默认选择 `HOST_NATIVE`，确认当前环境有哪些原生子 Agent / delegation 工具、并发槽位、解析后的实际读写权限和隔离能力。Agent 名称或描述不能替代权限证据。按需读取 [runtime-adapters.md](references/runtime-adapters.md)。
+2. **依赖关系**：只有能够独立完成、不会等待彼此输出的任务才并行。单任务或强依赖链保持单 Agent / 顺序执行。
+3. **写入隔离**：只有实际权限强制禁写的 Worker 才可共享仓库并行。任何具有编辑工具的 Worker，即使任务要求只读，也必须使用宿主隔离工作区或独立 Git worktree。无法隔离时，所有可能写入的工作顺序执行。
 
-存在 2+ 个文件级互斥的独立任务域需并行实现；或任务须走完整 Gate；或发现"代码已被其他 Agent 写入但未走 Gate"。
+若宿主没有子 Agent 工具，明确说明限制并顺序完成；不要伪装已经并行。
 
-## 决策模型
+## 默认 QUICK 流程
 
-### 1. Execution Mode（4 种，与 Runtime 正交，详见 references/execution-modes.md）
+### 1. 划分独立工作域
+
+按组件、问题域或交付物划分，而不是机械地按文件数量划分。为每个任务写一个自包含任务包：
 
 ```text
-READ_ONLY_PARALLEL          → Fact Audit/exploration/review,无需 worktree
-NORMAL_IMPLEMENTATION       → 单 Worker
-PARALLEL_IMPLEMENTATION     → 多 Worker(文件域互斥)
-IMPORTED_EXISTING_IMPLEMENTATION → 既有代码审计(references/imported-implementation.md)
+TASK_ID
+GOAL
+DELIVERABLE
+CONTEXT
+ACCESS_MODE          # READ_ONLY_ENFORCED | WRITE_ISOLATED
+OWNED_PATHS          # 写任务必填；文件或互斥目录
+FORBIDDEN_PATHS      # 写任务必填
+DEPENDENCIES         # 并行任务应为空或已满足
+VERIFICATION
+REPORT_FORMAT
 ```
 
-### 2. Runtime（AUTO 决策，详见 references/runtime-adapters.md）
+共享文件、根 lockfile、公共 schema、迁移和版本号默认归 Coordinator 或单一指定 Worker；禁止多个 Worker 同时拥有。
+
+### 2. 选择执行方式
+
+- **并行只读**：搜索、审计、研究、测试诊断、方案比较。先确认所选子 Agent 的解析后权限确实禁用 edit/write/apply-patch，再共享仓库并发派发。
+- **并行写入**：优先使用宿主提供的隔离 workspace；否则由 Coordinator 创建独立 Git worktree，并把绝对路径和分支写进任务包。
+- **顺序写入**：任务耦合、所有权重叠、无法隔离，或用户未授权需要的 Git 操作时使用。仍可先并行调查。
+
+调用 Skill 本身不构成 commit、push、merge、PR、部署或其他外部写入授权。遵守宿主与用户的授权边界。
+
+### 3. 并发派发
+
+- 一个独立工作域对应一个子 Agent；数量不超过独立任务数、可用槽位和用户限制三者的最小值。
+- 按解析后的工具权限选择 Agent；不要根据 `explore`、`reviewer` 等名称推断它一定只读。
+- 在宿主支持时，在同一个协调回合发出所有可并行任务。
+- Prompt 只包含该任务所需上下文、路径、约束、验证和输出契约；不要倾倒整段会话历史或秘密。
+- Coordinator 保留集成、共享文件和最终验收职责。Worker 不得自行扩大范围或再委派，除非任务包明确允许且宿主支持。
+
+### 4. 收集与处理阻塞
+
+每个 Worker 必须返回：
 
 ```text
-ClawTeam unavailable / version incompatible / health FAIL → NATIVE(+RUNTIME_FALLBACK 记录)
-CompatibilityAdapter FAIL → NATIVE(+COMPATIBILITY_FAILURE 证据)
-简单单 Worker → NATIVE 或 CLAWTEAM 均可
-需要 DAG/多 Worker/BLOCKED 通信 → 优先 CLAWTEAM
-用户显式指定 → 遵守(安全/preflight 失败除外)
+STATUS: DONE | BLOCKED | FAILED
+SUMMARY
+CHANGED_PATHS        # 只读任务写 NONE
+VERIFICATION_COMMANDS_AND_RESULTS
+RISKS_OR_OPEN_QUESTIONS
 ```
 
-fallback 必须可见：记录 `requestedRuntime / selectedRuntime / fallbackUsed / fallbackReason`。
+`BLOCKED` 必须说明 observed、expected、需要的决策、受影响路径以及是否留下局部修改。Coordinator 解决阻塞后再继续；不要让 Worker 静默改规格或越界。
 
-## 主流程（NORMAL / PARALLEL）
+### 5. Coordinator 验收
+
+不要把 Worker 自报当作完成证据。Coordinator 必须：
+
+1. 检查每份实际输出、diff 或提交范围；
+2. 核对所有权与未知改动；
+3. 处理冲突和共享文件；
+4. 亲自运行相关测试，再按风险运行整体验证；
+5. 汇总每个任务状态、整合结果、验证证据和剩余风险。
+
+若写任务使用 worktree，Worker 不得直接写 main。只有在相应 Git 操作已获授权时，Coordinator 才可把通过验收的结果整合到 integration 分支；默认不 push、不合并 main。
+
+## STRICT 流程
+
+以下情况使用 STRICT：用户明确要求完整 Gate、高风险/跨组件实现、多个并行写 Worker、已有其他 Agent 代码需补审计，或错误整合代价较高。
+
+先读取 [strict-worktree-flow.md](references/strict-worktree-flow.md)，再按需要读取其中链接的模板和协议。STRICT 保留 Contract Freeze、文件所有权、独立验证、Spec Review、Quality Review、修复复审和 Human Merge Gate。
+
+## 关键不变量
 
 ```text
-0.  Preflight:main 干净、无未知改动(INVARIANT 1/4)
-1.  Select ExecutionMode
-2.  Fact Audit(计划意图 vs 仓库现状;计划过期先纠正契约)
-3.  Freeze Contract(templates/contract-template.md;含所有权、测试矩阵、领域矩阵)
-4.  Build Task Graph + Ownership(文件级;共享热点单 owner)
-5.  Select Runtime(AUTO)
-6.  Create Workspaces(Coordinator 统一;记录 baseCommit)
-7.  Spawn / Execute(templates/implementer-prompt.md;路径证明协议)
-8.  Collect Worker Evidence(commit hash、文件清单、command+scope)
-9.  Coordinator Independent Verification(protocols/verification-protocol.md;targeted+full+挂起检测;Worker 自报 vs 独立结果不一致 → VERIFICATION_MISMATCH 记录)
-10. Runtime Conflict / Ownership Gate(越界、RUNTIME_STATE_MISMATCH——与验证产出的 VERIFICATION_MISMATCH 是两类信号,均须记录)
-11. Integration Worktree(cherry-pick;禁止 Worker→main 直连)
-12. Spec Review(templates/spec-reviewer-prompt.md)
-13. Quality Review(templates/quality-reviewer-prompt.md;异步副作用专项)
-14. Fix Loop(新 commit → 独立重验证 → 复审)
-15. Independent Reverification
-16. Human Merge Gate(READY_FOR_HUMAN_MERGE;不自动 merge)
-17. Cleanup(worktree/分支/registry;卫生检查)
+1. Parallelism is an optimization, not a goal.
+2. Parallel writers never share an unisolated working tree.
+3. A shared working tree is allowed only for permission-enforced read-only workers.
+4. Worker self-report is advisory; Coordinator verification decides acceptance.
+5. Unknown changes are preserved until ownership is resolved.
+6. No Worker silently expands scope or edits shared files.
+7. Skill invocation never broadens the user's authorization.
 ```
 
-## IMPORTED 模式流程
+## 按需参考
 
-```text
-Import Detection → Fact Audit → Contract Reconstruction → Independent Verification
-→ Spec → Quality → Remediation(审计 worktree)→ Reverify → re-review → Human Gate
-```
-
-## 必须遵守的 Gate（任何一环缺失或仅依赖 Agent 自报，不得进入下一环）
-
-- Contract Freeze：Worker 见代码前
-- Independent Verification：Coordinator 亲跑；`PASS/FAIL/TIMEOUT/HANG_SUSPECTED`；`VERIFICATION_MISMATCH` 记录
-- 所有权核对 + scope-expansion 决策记录
-- Integration Worktree：Worker → integration → Gate → Human → main
-- 两阶段审查：Spec 先于 Quality；修复后重验证+复审
-- Human Merge Gate：默认终点
-
-## BLOCKED
-
-统一 BLOCKED 协议（type 固定 `BLOCKED`、category 独立传递，如 type="BLOCKED", category="SPEC_CONFLICT"；protocols/blocked-protocol.md）：observed/expected/options/filesAffected/noChangesMade=true。传输经 Inbox envelope（protocols/inbox-protocol.md）。
-
-## 停止条件
-
-- 多任务改同一核心文件 / 契约未冻结 / 迁移有先后依赖 / 任务间代码依赖 / 所有权不明 → 禁止并行
-- 出现 RUNTIME_STATE_MISMATCH / COMPATIBILITY_FAILURE / 挂起 → 停止并调查，禁止静默重试
-- 默认停止于 READY_FOR_HUMAN_MERGE，不自动 merge main
-
-## 模板 / 协议 / 参考
-
-- templates/：contract / ownership / implementer-prompt / spec-reviewer-prompt / quality-reviewer-prompt / manifest
-- protocols/：blocked / verification / inbox / runtime-state
-- references/：execution-modes / worktree-safety / runtime-adapters / review-gates / imported-implementation / recovery-and-cleanup
-- Runtime 证据链:Phase 0-3A 完整验证记录由各仓库自行维护,本 Skill 自包含运行
+- 执行模式选择：[execution-modes.md](references/execution-modes.md)
+- 宿主工具与 Runtime 映射：[runtime-adapters.md](references/runtime-adapters.md)
+- Git worktree 安全：[worktree-safety.md](references/worktree-safety.md)
+- 严格审查 Gate：[review-gates.md](references/review-gates.md)
+- 导入既有实现：[imported-implementation.md](references/imported-implementation.md)
+- BLOCKED、验证和 Runtime 状态：[`protocols/`](protocols/)
+- 严格模式模板：[`templates/`](templates/)
