@@ -1,14 +1,21 @@
 {
   "runId": "<feature>-YYYYMMDD-01",
   "baseCommit": "<sha>",
-  "baseBranch": "chore/<baseline>",
-  "opencodeBin": "<resolved binary path>",
-  "opencodeVersion": "<version>",
+  "baseBranch": "<base-branch>",
+  "profile": "QUICK|STRICT",
+  "executionMode": "READ_ONLY_PARALLEL|NORMAL_IMPLEMENTATION|PARALLEL_IMPLEMENTATION|IMPORTED_EXISTING_IMPLEMENTATION",
+  "requestedRuntime": "HOST_NATIVE|OPENCODE_CLI|CLAWTEAM",
+  "selectedRuntime": "HOST_NATIVE|OPENCODE_CLI|CLAWTEAM",
+  "fallbackUsed": false,
+  "fallbackReason": null,
+  "host": "<agent host and version>",
+  "delegationTool": "<resolved native tool or command>",
   "integrationBranch": "integration/<feature>",
   "maxParallel": 2,
   "workers": [
     {
       "name": "<name>",
+      "accessMode": "READ_ONLY_ENFORCED|WRITE_ISOLATED",
       "branch": "agent/<name>",
       "worktree": "<absolute path>",
       "allowedFiles": [
@@ -20,9 +27,9 @@
       "status": "running|done|blocked|failed",
       "pid": null,
       "exitCode": null,
-      "output": ".opencode/parallel-runs/<run-id>/<name>.jsonl",
+      "output": "<runtime-managed output path>",
       "commits": []
     }
   ],
-  "model": "<pinned worker model, e.g. provider/model-id>"
+  "model": "<worker model when selectable; otherwise inherited>"
 }

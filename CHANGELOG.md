@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.1.0 (2026-08-20)
+
+- Added a simple QUICK profile: split independent domains, dispatch with host-native subagent tools, and verify centrally.
+- Made custom OpenCode agent definitions optional instead of a hard installation dependency.
+- Added direct GitHub URL installation via the standard `npx --yes skills ... -y` path, disabling both npx and Skill CLI prompts.
+- Added explicit runtime mappings for OpenCode, Codex, Claude Code, and generic delegation hosts.
+- Required isolated workspaces for every Worker with edit tools; only permission-enforced read-only Workers can share a repository.
+- Required resolved permission evidence before treating a Worker as read-only; Agent names such as `explore` are not trusted as permission proof.
+- Moved the 17-step worktree and review pipeline into an on-demand STRICT reference.
+- Added Agent Skills compatibility metadata and `agents/openai.yaml` UI metadata.
+
 ## v1.0.0-rc1 (2026-08-11)
 
 - Policy / Runtime decoupling with two interchangeable runtimes (Native OpenCode, ClawTeam optional)

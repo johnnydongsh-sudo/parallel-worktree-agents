@@ -1,6 +1,6 @@
 # Worktree Implementer 任务模板（Coordinator 填充后发给 Worker）
 
-你是一个并行实现 Worker，在**独立 git worktree** 中以独立 opencode 进程运行。你只对自己的 Worktree 负责。
+你是一个并行实现 Worker，在**独立 Git worktree 或宿主隔离 workspace** 中运行。你只对自己的 Workspace 负责；不要假设特定宿主或工具名称。
 
 ## 任务六要素
 
@@ -10,10 +10,12 @@ BRANCH=<agent/<name>>
 BASE_COMMIT=<冻结基线 commit>
 ALLOWED_FILES=<文件级清单，每行一个>
 FORBIDDEN_FILES=<文件级清单>
+RUNTIME=<HOST_NATIVE|OPENCODE_CLI|CLAWTEAM>
+COMMIT_MODE=<FORBIDDEN|AUTHORIZED>
 DELIVERABLES=<测试命令、提交要求、输出要求>
 ```
 
-## 0. 启动前路径证明（必须逐条执行并原样回显结果）
+## 0. 启动前路径证明（使用当前 shell 的等价命令，必须逐条执行并原样回显结果）
 
 ```bash
 cd "$WORKTREE_ROOT" && pwd
@@ -30,7 +32,8 @@ git status --short
 - show-toplevel == WORKTREE_ROOT
 - branch == BRANCH
 - HEAD == BASE_COMMIT（初始状态）
-- git-dir != git-common-dir（确认 linked worktree）
+- 若要求 linked worktree：git-dir != git-common-dir
+- 若宿主提供隔离 workspace：给出宿主隔离证据，且不得与其他写 Worker 共用根目录
 - show-superproject-working-tree 为空（排除 submodule）
 - status clean
 
@@ -44,7 +47,8 @@ git status --short
 
 - 只能修改 ALLOWED_FILES 列出的文件。
 - 需要修改 FORBIDDEN_FILES / 任何未列出文件 → 禁止直接改，返回 BLOCKED（见第 5 节）。
-- git add 只能 add 自己 ALLOWED_FILES 中的文件，严禁 `git add -A` / `git add .`。
+- `COMMIT_MODE=AUTHORIZED` 时，git add 只能 add 自己 ALLOWED_FILES 中的文件，严禁 `git add -A` / `git add .`。
+- `COMMIT_MODE=FORBIDDEN` 时不得 add/commit；保留可审查 diff 并报告给 Coordinator。
 
 ## 3. 实现纪律
 
@@ -54,7 +58,7 @@ git status --short
 
 ## 4. 禁止命令（配置层 deny，违反即违规）
 
-git push / git merge / git rebase / git worktree remove / git reset --hard / 生产部署 / 读取生产凭证。
+git push / git merge / git rebase / git worktree remove / git reset --hard / 生产部署 / 读取生产凭证。若 `COMMIT_MODE=FORBIDDEN`，git add / git commit 同样禁止。
 
 ## 5. BLOCKED 协议（JSON，schema 见 protocols/blocked-protocol.md）
 
@@ -81,9 +85,10 @@ git push / git merge / git rebase / git worktree remove / git reset --hard / 生
 ## 6. 交付要求
 
 - 完成：运行 DELIVERABLES 中的测试命令，确认全绿。
-- 提交：一个或多个**原子 commit**，message 遵循仓库规范。
+- `COMMIT_MODE=AUTHORIZED`：一个或多个**原子 commit**，message 遵循仓库规范。
+- `COMMIT_MODE=FORBIDDEN`：不提交；保留局部 diff 供 Coordinator 验收和整合。
 - 输出（最终消息必须包含）：
-  - commit hash 列表
+  - commit hash 列表；未提交时写 `NONE`
   - 修改文件清单
   - 测试命令与结果
 - 禁止 merge、rebase、push、删除 Worktree。
