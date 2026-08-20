@@ -1,102 +1,79 @@
 # parallel-worktree-agents
 
-> A policy-driven multi-agent software engineering skill for OpenCode with Git Worktree isolation and pluggable runtimes.
+A portable Agent Skill for splitting one project goal into safe, independent lanes and coordinating multiple subagents. It uses the host agent's native delegation tools by default and adds Git worktree isolation when several agents need to write code concurrently.
 
-## What it is
+## Give another agent only the repository link
 
-```text
-Policy Layer
-├── Fact Audit
-├── Contract Freeze
-├── Ownership
-├── Verification
-├── Spec Review
-├── Quality Review
-└── Human Merge Gate
-
-Runtime Layer
-├── Native OpenCode
-└── ClawTeam (optional)
-```
-
-**Runtime reports state; Policy decides acceptance.** The Policy layer is runtime-independent: ClawTeam and Native OpenCode are interchangeable execution backends, while contract freeze, independent verification, two-stage review and the human merge gate always stay in force.
-
-## Execution Modes
+Send this message:
 
 ```text
-READ_ONLY_PARALLEL               # fact audit / exploration / review, no worktree needed
-NORMAL_IMPLEMENTATION            # single worker
-PARALLEL_IMPLEMENTATION          # multiple workers (file-level disjoint ownership)
-IMPORTED_EXISTING_IMPLEMENTATION # code written by another agent without gates
+Install and use this Agent Skill:
+https://github.com/johnnydongsh-sudo/parallel-worktree-agents
+
+Use it to split my goal into independent tasks, delegate them to multiple
+subagents where safe, and verify the combined result.
 ```
 
-Modes and runtimes are orthogonal (e.g. `IMPORTED × NATIVE`, `PARALLEL × CLAWTEAM`).
-
-## Runtime
-
-```text
-AUTO     # default: ClawTeam unavailable/incompatible → NATIVE (RUNTIME_FALLBACK recorded);
-         # needs DAG / multi-worker / BLOCKED communication → prefer CLAWTEAM
-NATIVE   # opencode run --dir <worktree>, manifest-based
-CLAWTEAM # HKUDS/ClawTeam coordination components (Registry/DAG/Inbox) — optional dependency
-```
-
-Fallback is always visible: `requestedRuntime / selectedRuntime / fallbackUsed / fallbackReason` are recorded.
-
-## 7 Invariants
-
-```text
-INVARIANT 1  Main working tree belongs to Coordinator.
-INVARIANT 2  Worker self-report is advisory only.
-INVARIANT 3  Worker commits never flow directly to main.
-INVARIANT 4  Unknown changes are never destroyed before ownership and preservation are proven.
-INVARIANT 5  Runtime reports state; Policy decides acceptance.
-INVARIANT 6  Parallelism is an optimization, not a goal.
-INVARIANT 7  Default terminal state is READY_FOR_HUMAN_MERGE.
-```
-
-## Install
+A supported coding agent can install it non-interactively with:
 
 ```bash
-git clone <repository-url>
+npx --yes skills add https://github.com/johnnydongsh-sudo/parallel-worktree-agents --skill parallel-worktree-agents -g -y
 ```
 
-Then link or copy the `parallel-worktree-agents` directory into your OpenCode skill directory (project `.opencode/skills/` or global `~/.config/opencode/skills/`).
-
-Install the required OpenCode agent definitions (`agents/`) into your OpenCode agents directory (project `.opencode/agents/` or global `~/.config/opencode/agents/`). The skill's runtime flow spawns workers via `opencode run --agent worktree-implementer` and reviewers via `--agent worktree-reviewer`; without these agent definitions the skill is not self-contained.
-
-Finally, run compatibility checks:
+Then invoke it with:
 
 ```text
-1. Install/symlink the skill.
-2. Install/symlink the required OpenCode agent definitions.
-3. Run compatibility checks (skill discovery, agent discovery, `opencode run --dir <worktree>` smoke).
+Use $parallel-worktree-agents to implement this goal: <goal>
 ```
 
-> Verify your OpenCode version's skill and agent directories before installation — paths vary across versions.
+For a project-local install, omit `-g`. To target a particular host, add for example `-a opencode`, `-a codex`, or `-a claude-code`.
 
-## Usage
+Private repositories require GitHub access on the recipient machine. For link-only installation without credentials, the repository must be public.
+
+## Why installation is simple now
+
+- The repository root is a valid Agent Skills package with one `SKILL.md`.
+- `npx skills` can discover it directly from the full GitHub URL or `owner/repo` shorthand.
+- The default path uses the host's existing subagent tools; separate OpenCode agent definitions are no longer required.
+- Existing `agents/worktree-implementer.md` and `agents/worktree-reviewer.md` remain optional OpenCode presets for stricter permission profiles.
+
+## What the skill does
 
 ```text
-Implement this feature using parallel-worktree-agents.
+Goal
+  -> dependency and ownership check
+  -> independent task packets
+  -> parallel host-native subagents
+  -> isolated workspaces for every write-capable worker
+  -> coordinator scope review and verification
+  -> integrated result (no automatic push or main merge)
 ```
 
-or:
+The default `QUICK` profile is suitable for ordinary research, review, diagnosis, and implementation work. The `STRICT` profile adds contract freeze, worktree manifests, independent verification, two-stage review, fix/re-review loops, and a human merge gate.
 
-```text
-Implement this feature.
-Runtime: CLAWTEAM.
+## Safety boundaries
+
+- Tightly coupled work stays sequential.
+- A shared working tree is allowed only for workers whose resolved permissions enforce read-only access.
+- Any worker with edit tools uses an isolated workspace, even when its prompt says the task is read-only.
+- Workers cannot silently expand file ownership.
+- Worker test claims are evidence, not acceptance; the coordinator reruns verification.
+- Installing or invoking the skill does not authorize commit, push, merge, PR creation, deployment, or secret access.
+
+## Package checks
+
+```bash
+npx --yes skills add . --list
 ```
 
-Default behavior: contract freeze → worktrees → workers → independent verification → integration worktree → Spec/Quality review → **stops at READY_FOR_HUMAN_MERGE**. Never auto-merges main.
+## Optional OpenCode presets
+
+OpenCode provides built-in subagents, so the core Skill works without extra agent files. Do not assume a built-in Agent remains read-only after project/global permission merging; inspect its resolved tools or isolate it. If you want the repository's stricter presets, copy the two Markdown files in `agents/` to either `.opencode/agents/` for one project or `~/.config/opencode/agents/` globally, then confirm OpenCode can discover them.
 
 ## Acknowledgements
 
-- This project optionally integrates with [HKUDS/ClawTeam](https://github.com/HKUDS/ClawTeam).
-- ClawTeam provides Team / Registry / DAG / Inbox / Conflict runtime capabilities.
-- `parallel-worktree-agents` independently provides the software engineering Policy layer.
-- These are separate projects: ClawTeam is not authored by this project, and this project is not an official ClawTeam extension, unless future official recognition is granted.
+The optional advanced runtime can integrate with [HKUDS/ClawTeam](https://github.com/HKUDS/ClawTeam). ClawTeam is a separate project and is not authored by this repository.
 
 ## License
 
-Not yet selected. This is a private release candidate; a license will be chosen before any public release. Third-party notices, if any, are preserved in the repository.
+Not yet selected. This repository remains a private release candidate until a license and public-release decision are made.

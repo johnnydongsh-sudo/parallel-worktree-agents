@@ -1,0 +1,6 @@
+interface:
+  display_name: "Parallel Worktree Agents"
+  short_description: "Coordinate safe parallel subagent work"
+  default_prompt: "Use $parallel-worktree-agents to split this project goal into safe independent lanes, delegate them, and verify the combined result."
+policy:
+  allow_implicit_invocation: true

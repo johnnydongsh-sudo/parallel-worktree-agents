@@ -1,7 +1,24 @@
-# Worktree 安全与 Main Workspace Ownership
+# Worktree Safety and Workspace Ownership
 
-- main working tree 属于 Coordinator；实现 Worker 禁止在 main 开发
-- 未知 main 修改：STOP → ownership 识别（reflog/mtime/进程句柄）→ 禁 stash/reset/checkout/clean 于未解析改动 → 迁移任务分支 → 恢复 main → 重跑追平检查
-- 迁移前置三查：进程句柄=0、mtime 两次采样稳定、无 git 锁
-- 红线：Never reset/checkout/clean/stash/overwrite UNKNOWN changes until ownership is resolved and preservation is proven. 所有权与保存已证明后，Coordinator 可用必要 Git 操作恢复 main
-- worktree 环境预热：sqlite3 dylib（复制主工作区已验证缓存，校验非零/架构/可加载）；spawn 必须钉选可用模型（`--model`，默认模型可能区域 403）
+- Coordinator 拥有当前主工作区；任何实际拥有编辑工具的并行 Worker 都不得共享未隔离工作区，即使其任务 Prompt 声称只读。
+- 宿主若已给每个子 Agent 独立 workspace/branch，优先使用；否则每个写 Worker 使用一个 Git worktree。
+- 创建 worktree 前记录 base commit、目标分支、绝对路径和文件所有权。不要在 main/master 上启动 Worker 实现。
+- Skill 调用不自动授权 branch、commit、cherry-pick、merge 或 cleanup；遵守用户和宿主的 Git 授权规则。未获所需授权时，改用并行调查 + Coordinator 顺序写入。
+- 未知主工作区修改：停止写入，识别所有权并证明已保存。禁止对未知改动执行 reset、checkout、clean、stash 或覆盖。
+- 一个共享文件在同一批任务中只能有一个 Owner。锁文件、schema、迁移、版本号和集成入口默认由 Coordinator 或单一 Worker 负责。
+- `READ_ONLY_ENFORCED` Worker 必须由权限层禁用写工具；`WRITE_ISOLATED` Worker 只读写任务包中的 workspace 和 OWNED_PATHS，不创建/删除 worktree，不 push，不合并 main。
+- Coordinator 验收实际 diff、验证结果和越界情况后，才可在已获授权时整合。
+- 只清理本轮明确创建且已验证无未保存改动的 worktree/分支；失败现场需要诊断时先保留。
+
+路径证明建议：
+
+```text
+git rev-parse --show-toplevel
+git branch --show-current
+git rev-parse HEAD
+git status --short
+git rev-parse --git-dir
+git rev-parse --git-common-dir
+```
+
+`show-toplevel`、branch、HEAD 和任务包一致，且 linked worktree 的 git-dir 与 git-common-dir 不同，才允许写入。

@@ -7,9 +7,10 @@
 ```text
 BASE_COMMIT=<冻结基线 commit>
 WORKER_COMMITS=<该 Worker 提交的全部 commit，逐个列出>
+WORKTREE_ROOT=<未提交模式下的隔离 workspace；否则可省略>
 ```
 
-审查区间：`git diff BASE_COMMIT..WORKER_COMMITS`（Worker 可能多个 commit，禁止只用 HEAD~1..HEAD）。
+审查区间：有提交时使用 `BASE_COMMIT..WORKER_COMMITS`（禁止只用 HEAD~1..HEAD）；无提交时审查 WORKTREE_ROOT 相对 BASE_COMMIT 的 staged + unstaged 完整 diff。
 
 ## 审查维度
 
