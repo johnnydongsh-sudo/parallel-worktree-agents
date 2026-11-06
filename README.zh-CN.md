@@ -104,4 +104,4 @@ git diff --check
 
 ## 许可证
 
-尚未选择许可证，仓库未包含 `LICENSE` 文件，需要由维护者决定。
+本项目采用 [MIT 许可证](LICENSE)。Copyright (c) 2026 johnnydongsh-sudo。

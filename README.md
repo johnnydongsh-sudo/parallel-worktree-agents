@@ -104,4 +104,4 @@ The optional advanced runtime can integrate with [HKUDS/ClawTeam](https://github
 
 ## License
 
-No license has been selected and no `LICENSE` file is included. The maintainer still needs to choose the project's license.
+Licensed under the [MIT License](LICENSE). Copyright (c) 2026 johnnydongsh-sudo.
