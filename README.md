@@ -1,79 +1,107 @@
 # parallel-worktree-agents
 
-A portable Agent Skill for splitting one project goal into safe, independent lanes and coordinating multiple subagents. It uses the host agent's native delegation tools by default and adds Git worktree isolation when several agents need to write code concurrently.
+**English** | [简体中文](README.zh-CN.md)
 
-## Give another agent only the repository link
+A portable Agent Skill for dividing a project goal into independent tasks, coordinating subagents, and verifying their combined work. It uses the host's native delegation tools and separate workspaces for workers that can write.
 
-Send this message:
+This repository contains instructions, protocols, templates and optional OpenCode presets. It does not ship a scheduler, executable runtime adapter or security sandbox.
+
+## Quick start
+
+Use an Agent Skills-compatible host. Parallel execution also requires actual delegation tools; otherwise the skill falls back to sequential work. Git is required for Git worktrees. The current Skills CLI requires Node.js 22.20 or later; see the [installation guide](docs/installation.md).
+
+Install globally for Codex:
+
+```bash
+npx --yes skills add https://github.com/johnnydongsh-sudo/parallel-worktree-agents --skill parallel-worktree-agents -a codex -g -y
+```
+
+Replace `codex` with `opencode` or `claude-code` for another host. Omit `-g` for a project-local install. `--yes` accepts the npx package prompt; `-y` accepts the Skills CLI prompts. On Windows PowerShell, use `npx.cmd` if execution policy blocks `npx.ps1`.
+
+Then ask your agent:
+
+```text
+Use $parallel-worktree-agents to improve this project's documentation.
+Split installation guidance and usage examples into independent tasks.
+Give every write-capable worker a separate workspace and explicit file ownership.
+Verify the combined changes and report anything that remains unresolved.
+```
+
+Or send another agent just the repository link:
 
 ```text
 Install and use this Agent Skill:
 https://github.com/johnnydongsh-sudo/parallel-worktree-agents
 
-Use it to split my goal into independent tasks, delegate them to multiple
-subagents where safe, and verify the combined result.
+Split my goal into independent tasks, delegate safely, and verify the combined
+result. Follow my host's permissions and authorization.
 ```
 
-A supported coding agent can install it non-interactively with:
-
-```bash
-npx --yes skills add https://github.com/johnnydongsh-sudo/parallel-worktree-agents --skill parallel-worktree-agents -g -y
-```
-
-Then invoke it with:
+## How it works
 
 ```text
-Use $parallel-worktree-agents to implement this goal: <goal>
+Goal → dependencies and ownership → task packets → isolated workers
+     → coordinator verification → reviewed combined result
 ```
 
-For a project-local install, omit `-g`. To target a particular host, add for example `-a opencode`, `-a codex`, or `-a claude-code`.
+| Profile | Use it for | What it adds |
+| --- | --- | --- |
+| `QUICK` | Ordinary independent research, review or a bounded implementation | Task packets, ownership, result collection and coordinator verification |
+| `STRICT` | Multiple parallel implementation workers, high-risk or cross-component changes, imported implementations, or requested review gates | Frozen contract, worktree manifest, Spec/Quality review, repair and re-review, human merge gate |
 
-Private repositories require GitHub access on the recipient machine. For link-only installation without credentials, the repository must be public.
+Execution mode and runtime are separate choices. The modes are `READ_ONLY_PARALLEL`, `NORMAL_IMPLEMENTATION`, `PARALLEL_IMPLEMENTATION` and `IMPORTED_EXISTING_IMPLEMENTATION`; see [execution modes](references/execution-modes.md). Tightly coupled tasks stay sequential.
 
-## Why installation is simple now
+## Host and runtime support
 
-- The repository root is a valid Agent Skills package with one `SKILL.md`.
-- `npx skills` can discover it directly from the full GitHub URL or `owner/repo` shorthand.
-- The default path uses the host's existing subagent tools; separate OpenCode agent definitions are no longer required.
-- Existing `agents/worktree-implementer.md` and `agents/worktree-reviewer.md` remain optional OpenCode presets for stricter permission profiles.
+| Runtime | Requirements |
+| --- | --- |
+| `HOST_NATIVE` (default) | Actual delegation tools and capacity exposed by Codex, OpenCode, Claude Code or another host |
+| `OPENCODE_CLI` (optional) | An installed compatible CLI, discoverable agents and verified command/prompt handling |
+| `CLAWTEAM` (optional) | A separately installed runtime and a compatible integration supplied by your environment |
 
-## What the skill does
+The skill does not install these runtimes or guarantee host permissions. If delegation is unavailable, report the limitation and work sequentially. See [runtime adapters](references/runtime-adapters.md) for capability checks and explicit fallback reporting.
 
-```text
-Goal
-  -> dependency and ownership check
-  -> independent task packets
-  -> parallel host-native subagents
-  -> isolated workspaces for every write-capable worker
-  -> coordinator scope review and verification
-  -> integrated result (no automatic push or main merge)
-```
+## Safety and privacy
 
-The default `QUICK` profile is suitable for ordinary research, review, diagnosis, and implementation work. The `STRICT` profile adds contract freeze, worktree manifests, independent verification, two-stage review, fix/re-review loops, and a human merge gate.
+- A shared checkout requires permission-enforced read-only workers across **all tools**, including shell commands. An agent name or `edit: deny` alone is insufficient.
+- Write-capable workers need separate workspaces. Git worktrees separate checkout state; host sandboxing is responsible for filesystem and credential access restrictions.
+- Workers have explicit file ownership. The coordinator checks actual diffs and independently runs relevant verification.
+- Installing or invoking the skill does not authorize commit, push, merge, PR creation, deployment or secret access.
+- Keep private prompts, credentials and runtime logs out of Git. Follow [SECURITY.md](SECURITY.md) for reporting and data handling.
 
-## Safety boundaries
+## Documentation
 
-- Tightly coupled work stays sequential.
-- A shared working tree is allowed only for workers whose resolved permissions enforce read-only access.
-- Any worker with edit tools uses an isolated workspace, even when its prompt says the task is read-only.
-- Workers cannot silently expand file ownership.
-- Worker test claims are evidence, not acceptance; the coordinator reruns verification.
-- Installing or invoking the skill does not authorize commit, push, merge, PR creation, deployment, or secret access.
+| Document | Purpose |
+| --- | --- |
+| [SKILL.md](SKILL.md) | Agent entry point and QUICK workflow |
+| [Installation](docs/installation.md) | Prerequisites, installation, updates, removal and optional presets |
+| [Troubleshooting](docs/troubleshooting.md) | Discovery, permissions, worktree, verification and runtime failures |
+| [STRICT workflow](references/strict-worktree-flow.md) | Complete engineering and review gates |
+| [Worktree safety](references/worktree-safety.md) | Workspace ownership and path checks |
+| [Recovery and cleanup](references/recovery-and-cleanup.md) | Preserve failed runs and clean owned resources |
+| [Protocols](protocols/) / [Templates](templates/) | Messages, verification records and task contracts |
+| [Contributing](CONTRIBUTING.md) | Change scope and package validation |
+| [Security](SECURITY.md) | Sensitive information and trust boundaries |
+| [Changelog](CHANGELOG.md) | Significant changes |
+| [Historical RC usage log](RC_USAGE_LOG.md) | Version-specific evidence, not current compatibility guarantees |
 
-## Package checks
+Both READMEs cover the same user-facing topics. Detailed workflow references are currently primarily Chinese.
+
+## Package validation
+
+From a clone of this repository:
 
 ```bash
 npx --yes skills add . --list
+git diff --check
 ```
 
-## Optional OpenCode presets
-
-OpenCode provides built-in subagents, so the core Skill works without extra agent files. Do not assume a built-in Agent remains read-only after project/global permission merging; inspect its resolved tools or isolate it. If you want the repository's stricter presets, copy the two Markdown files in `agents/` to either `.opencode/agents/` for one project or `~/.config/opencode/agents/` globally, then confirm OpenCode can discover them.
+Discovery should list one skill named `parallel-worktree-agents`. This confirms packaging, not a complete multi-agent runtime test. See [Contributing](CONTRIBUTING.md) for other checks.
 
 ## Acknowledgements
 
-The optional advanced runtime can integrate with [HKUDS/ClawTeam](https://github.com/HKUDS/ClawTeam). ClawTeam is a separate project and is not authored by this repository.
+The optional advanced runtime can integrate with [HKUDS/ClawTeam](https://github.com/HKUDS/ClawTeam), a separate project not authored by this repository.
 
 ## License
 
-Not yet selected. This repository remains a private release candidate until a license and public-release decision are made.
+No license has been selected and no `LICENSE` file is included. The maintainer still needs to choose the project's license.

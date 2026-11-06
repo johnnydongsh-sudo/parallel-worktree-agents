@@ -6,4 +6,4 @@
 - 卫生检查：无孤儿测试进程、无 Git 锁、无引用已删 worktree 的进程
 - 孤儿进程：TERM → verify → KILL only if necessary；记录卫生日志
 - ClawTeam 现场：失败时 worktree+registry 保留供诊断（preservation 由 adapter 接管；ClawTeam 默认 spawn 失败会 cleanup，需 adapter 预记录 branch/base 后重建）
-- Snapshot/恢复：ClawTeam snapshot 整域恢复（仅协调状态）；Checkpoint 的 `git add -A` 仅限 worker 自身 worktree，禁止主工作区
+- Snapshot/恢复：ClawTeam snapshot 整域恢复（仅协调状态）。Checkpoint 仅在提交已获授权时进行，并只暂存 Worker 的 ALLOWED_FILES 明确列出的已核查文件；禁止 `git add -A` / `git add .`，不得混入 runtime 生成物、秘密或未知改动。未经授权时保留局部 diff，不暂存、不提交。

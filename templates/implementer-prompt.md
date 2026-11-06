@@ -80,7 +80,7 @@ git push / git merge / git rebase / git worktree remove / git reset --hard / 生
 }
 ```
 
-禁止在 BLOCKED 前留下半成品（noChangesMade 必须为 true）。
+`noChangesMade` 必须如实填写。若阻塞前已有局部修改，填 false，列出实际修改路径和验证状态，并保留 diff 供 Coordinator 判断。立即停止继续修改，不得为了填 true 丢弃或回滚未知改动。
 
 ## 6. 交付要求
 

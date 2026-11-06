@@ -18,6 +18,6 @@ Worker 遇到规格冲突、越界需求、无法完成时，禁止自行修改�
 }
 ```
 
-- `noChangesMade` 必须为 true（BLOCKED 前不得留半成品）
+- `noChangesMade` 必须如实填写：没有修改时为 true；已有局部修改时为 false，并在 `filesAffected` 和 `observed` 中说明实际修改范围及验证状态。遇到阻塞立即停止继续修改，保留 diff 供 Coordinator 判断，不得为了填 true 丢弃或回滚未知改动。
 - Coordinator 决策后重新派发；决策记录入 run manifest
 - 传输：经 Inbox content envelope（见 inbox-protocol.md），不扩展 upstream 枚举

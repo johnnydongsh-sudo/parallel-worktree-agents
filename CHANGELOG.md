@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Added matching English and Simplified Chinese READMEs, installation and maintenance guidance, troubleshooting, contributing and security documentation.
+- Removed the outdated private-release description and clarified that optional runtimes and a filesystem sandbox are not bundled.
+- Clarified read-only permission evidence, explicit checkpoint staging and truthful reporting of partial changes when a worker becomes blocked.
+
 ## v1.1.0 (2026-08-20)
 
 - Added a simple QUICK profile: split independent domains, dispatch with host-native subagent tools, and verify centrally.
