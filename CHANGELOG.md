@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Clarified link-based installation prerequisites, private-repository authentication, and separate checks for files, installer registration and host discovery.
 - Adopted the MIT License and linked its full text from both READMEs.
 - Added matching English and Simplified Chinese READMEs, installation and maintenance guidance, troubleshooting, contributing and security documentation.
 - Removed the outdated private-release description and clarified that optional runtimes and a filesystem sandbox are not bundled.

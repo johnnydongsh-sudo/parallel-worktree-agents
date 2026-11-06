@@ -7,9 +7,21 @@
 - An Agent Skills-compatible host. Parallel execution requires actual delegation tools and sufficient capacity; installation alone does not enable them.
 - Git for cloning and worktree operations.
 - Node.js 22.20+ for the current external Skills CLI, according to its [upstream documentation](https://github.com/vercel-labs/skills/blob/main/README.md). Manual installation does not require Node.js.
-- Network access to GitHub and, for `npx`, npm. Reading this public repository needs no GitHub credential. Your host/model may have separate account requirements.
+- Network access to GitHub and, for `npx`, npm. Public repositories can be read without GitHub credentials; a private repository requires an already authorized Git, GitHub CLI or SSH identity on the installing machine. A repository link does not grant access. Your host/model may have separate account requirements.
 
 This is an instruction package. There is no application build, service, dependency lockfile or bundled ClawTeam adapter to start.
+
+## Agent-driven installation / 交给 Agent 安装
+
+An agent can install this package when it can run terminal commands, access the repository and write to the chosen skill directory. A chat-only agent cannot install files on your machine. Follow this sequence:
+
+1. Identify the actual host and choose its supported CLI agent name. Check Git, Node.js and npm; use the complete-package manual path if Node.js is unavailable. Report missing dependencies instead of changing system settings silently.
+2. Choose project-local or global scope according to the user's request. When no scope is specified, use project-local installation in the target project. Inspect existing installations and preserve customizations.
+3. Run the corresponding non-interactive command below. Keep credentials in the configured credential helper; do not put tokens in the command, URL or chat.
+4. Require a zero exit code. A clone/authentication/network error is an installation failure; report the actual error and do not claim completion.
+5. Verify installed files, installer registration and host discovery separately. Report whether a new host session is needed, and whether delegation is actually available. Installing a skill does not add delegation tools.
+
+See the [Skills CLI reference](https://github.com/vercel-labs/skills/blob/main/docs/commands.md) for supported authentication and installation options.
 
 ## CLI installation / CLI 安装
 
@@ -56,10 +68,11 @@ These paths illustrate a configured discovery location, not a promise that every
 
 ## Verify discovery and use / 验证发现与使用
 
-1. Reload the host's skill list or start a new session if needed.
-2. Confirm discovery of `parallel-worktree-agents` and its references.
-3. Try two small independent tasks in a disposable project.
-4. Confirm actual delegation, separate workspaces for write-capable workers, ownership checks and coordinator verification. If delegation is absent, expect an explicit sequential fallback.
+1. Check installer registration for the chosen host and scope. For a project-local Codex install, run `npx --yes skills list -a codex --json` from the target project; add `-g` for a global install or replace `codex` with the selected host.
+2. Inspect the path returned by the installer: `SKILL.md`, `references/runtime-adapters.md`, `templates/implementer-prompt.md` and `protocols/blocked-protocol.md` must exist. Do not assume a separate directory for every host; hosts may share `.agents/skills`.
+3. Reload the host's skill list or start a new session if needed. Confirm the host itself discovers `parallel-worktree-agents` and can read its references. Installer registration alone does not establish host discovery.
+4. Try two small independent tasks in a disposable project when a runtime smoke test is requested.
+5. Confirm actual delegation, separate workspaces for write-capable workers, ownership checks and coordinator verification. If delegation is absent, expect an explicit sequential fallback. Report an unexecuted runtime test as not run.
 
 See [Troubleshooting](troubleshooting.md). Package discovery is not evidence of end-to-end orchestration success.
 

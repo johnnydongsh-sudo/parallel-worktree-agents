@@ -33,9 +33,15 @@ npx --yes skills add https://github.com/johnnydongsh-sudo/parallel-worktree-agen
 安装并使用这个 Agent Skill：
 https://github.com/johnnydongsh-sudo/parallel-worktree-agents
 
-将我的目标拆成独立任务，安全地委派给子 Agent，并验证整合结果。
+识别当前宿主，检查安装前提和仓库访问权限。
+除非我要求全局安装，否则在目标项目中非交互安装。
+保留已有定制，验证安装文件、安装器登记和宿主发现状态，
+说明是否需要新会话。明确报告安装失败或缺少委派工具的情况。
+然后将我的目标拆成独立任务，安全地委派给子 Agent，并验证整合结果。
 遵守当前宿主的权限和我的授权范围。
 ```
+
+Agent 需要终端、写入及仓库访问权限。私有仓库要求目标机器已有获授权身份，仅有链接不会获得访问权。详见[交给 Agent 安装](docs/installation.md#agent-driven-installation--交给-agent-安装)。
 
 ## 工作方式
 

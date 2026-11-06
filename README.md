@@ -33,9 +33,16 @@ Or send another agent just the repository link:
 Install and use this Agent Skill:
 https://github.com/johnnydongsh-sudo/parallel-worktree-agents
 
-Split my goal into independent tasks, delegate safely, and verify the combined
-result. Follow my host's permissions and authorization.
+Identify this host and check installation prerequisites and repository access.
+Install non-interactively into this project unless I request global installation.
+Preserve existing customizations. Verify installed files, installer registration
+and host discovery; report whether a new session is required.
+Report failures and missing delegation tools explicitly.
+Then split my goal into independent tasks, delegate safely, and verify the
+combined result. Follow my host's permissions and authorization.
 ```
+
+The agent needs terminal/write access and access to the repository. Private repositories require an authorized identity on that machine; a link alone does not grant access. See [Agent-driven installation](docs/installation.md#agent-driven-installation--交给-agent-安装).
 
 ## How it works
 

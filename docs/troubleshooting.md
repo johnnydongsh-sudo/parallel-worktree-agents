@@ -6,6 +6,8 @@
 | --- | --- |
 | `npx` missing or unsupported Node version | Check `node --version` and `npm --version`; follow [installation prerequisites](installation.md) or install manually. |
 | PowerShell blocks `npx.ps1` | Use `npx.cmd` with the same arguments, without changing system execution policy. |
+| Link installation reports authentication failure or repository not found | Check repository visibility and the installing machine's authorized Git/GitHub CLI/SSH identity. A private repository link grants no access. Do not paste tokens into URLs or issues. |
+| Clone fails with connection reset, timeout or network error | Report installation as failed; inspect network/proxy access before retrying. If a verified complete local checkout exists, install from that local path and identify it as a local-source installation. |
 | Installed skill not discovered | Check host/scope, installation output and duplicate global/project copies. Preserve `SKILL.md` and sibling folders; reload the host session. |
 | Tasks run sequentially | Check actual delegation tools, capacity and dependencies. Sequential fallback is expected if tools or isolation are unavailable. |
 | A reviewer can write | Inspect merged tool permissions, shell commands and test side effects. Use an isolated workspace unless the host enforces read-only access across all tools. |
